@@ -8,7 +8,13 @@
     self.session = [[AVCaptureSession alloc] init];
     self.sessionQueue = dispatch_queue_create("session queue", DISPATCH_QUEUE_SERIAL);
     if ([self.session canSetSessionPreset:AVCaptureSessionPresetPhoto]) {
-      [self.session setSessionPreset:AVCaptureSessionPresetPhoto];
+      // [self.session setSessionPreset:AVCaptureSessionPresetPhoto];
+        
+        if([[UIScreen mainScreen] bounds].size.height / [[UIScreen mainScreen] bounds].size.width < 1.4f)
+            [self.session setSessionPreset:AVCaptureSessionPresetPhoto];
+        else
+            [self.session setSessionPreset:AVCaptureSessionPreset1920x1080];
+
     }
     self.filterLock = [[NSLock alloc] init];
     
