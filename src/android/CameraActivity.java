@@ -354,18 +354,23 @@ public class CameraActivity extends Fragment {
   };
 
   PictureCallback jpegPictureCallback = new PictureCallback(){
-    public void onPictureTaken(byte[] data, Camera arg1){
+    public void onPictureTaken(final byte[] data, Camera arg1){
       Log.d(TAG, "CameraPreview jpegPictureCallback");
-      Camera.Parameters params = mCamera.getParameters();
+      final Camera.Parameters params = mCamera.getParameters();
       try {
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,data.length);
-        bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, params.getJpegQuality(), outputStream);
-        byte[] byteArray = outputStream.toByteArray();
-        String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
-        eventListener.onPictureTaken(encodedImage);
-        Log.d(TAG, "CameraPreview pictureTakenHandler called back");
+          new Thread() {
+              public void run() {
+                  Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,data.length);
+                  bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
+                  ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                  bitmap.compress(Bitmap.CompressFormat.JPEG, params.getJpegQuality(), outputStream);
+                  byte[] byteArray = outputStream.toByteArray();
+                  String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
+                  eventListener.onPictureTaken(encodedImage);
+                  Log.d(TAG, "CameraPreview pictureTakenHandler called back");
+              }
+          }.start();
+
       } catch (OutOfMemoryError e) {
         // most likely failed to allocate memory for rotateBitmap
         Log.d(TAG, "CameraPreview OutOfMemoryError");
@@ -450,18 +455,14 @@ public class CameraActivity extends Fragment {
 
       canTakePicture = false;
 
-      new Thread() {
-        public void run() {
-          Camera.Parameters params = mCamera.getParameters();
+        Camera.Parameters params = mCamera.getParameters();
 
-          Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
-          params.setPictureSize(size.width, size.height);
-          params.setJpegQuality(quality);
+        Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
+        params.setPictureSize(size.width, size.height);
+        params.setJpegQuality(quality);
 
-          mCamera.setParameters(params);
-          mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
-        }
-      }.start();
+        mCamera.setParameters(params);
+        mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
     } else {
       canTakePicture = true;
     }

@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PluginResult;
 import org.json.JSONObject;
@@ -269,14 +270,20 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
     return true;
   }
 
-  private boolean takePicture(int width, int height, int quality, CallbackContext callbackContext) {
+  private boolean takePicture(final int width, final int height, final int quality, CallbackContext callbackContext) {
     if(this.hasView(callbackContext) == false){
       return true;
     }
 
     takePictureCallbackContext = callbackContext;
 
-    fragment.takePicture(width, height, quality);
+      this.cordova.getThreadPool().execute(new Runnable() {
+          @Override
+          public void run() {
+              fragment.takePicture(width, height, quality);
+          }
+      });
+
 
     return true;
   }
