@@ -417,10 +417,8 @@
   if (self.cameraRenderController != NULL) {
     self.onPictureTakenHandlerId = command.callbackId;
 
-    CGFloat width = (CGFloat)1080;
-    CGFloat height = (CGFloat)1920;
-    // CGFloat width = (CGFloat)[command.arguments[0] floatValue];
-    // CGFloat height = (CGFloat)[command.arguments[1] floatValue];
+    CGFloat width = (CGFloat)[command.arguments[0] floatValue];
+    CGFloat height = (CGFloat)[command.arguments[1] floatValue];
     CGFloat quality = (CGFloat)[command.arguments[2] floatValue] / 100;
 
     [self invokeTakePicture:width withHeight:height withQuality:quality];
@@ -640,18 +638,15 @@
         //image resize
 
         if(width > 0 && height > 0){
-           CGFloat scale = 1600/capturedImage.size.height;
-//           CGFloat scaleWidth = height/capturedImage.size.width;
-            if([[UIScreen mainScreen] bounds].size.height / [[UIScreen mainScreen] bounds].size.width > 1.4f)
-                  scale = 1.0f;
-      
+          CGFloat scaleHeight = width/capturedImage.size.height;
+          CGFloat scaleWidth = height/capturedImage.size.width;
+          CGFloat scale = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
 
           CIFilter *resizeFilter = [CIFilter filterWithName:@"CILanczosScaleTransform"];
           [resizeFilter setValue:[[CIImage alloc] initWithCGImage:[capturedImage CGImage]] forKey:kCIInputImageKey];
           [resizeFilter setValue:[NSNumber numberWithFloat:1.0f] forKey:@"inputAspectRatio"];
           [resizeFilter setValue:[NSNumber numberWithFloat:scale] forKey:@"inputScale"];
           capturedCImage = [resizeFilter outputImage];
-          // capturedCImage = capturedImage;
         }else{
           capturedCImage = [[CIImage alloc] initWithCGImage:[capturedImage CGImage]];
         }
@@ -681,9 +676,6 @@
 
         CGImageRef finalImage = [self.cameraRenderController.ciContext createCGImage:finalCImage fromRect:finalCImage.extent];
         UIImage *resultImage = [UIImage imageWithCGImage:finalImage];
-         
-        
-          
 
         double radians = [self radiansFromUIImageOrientation:resultImage.imageOrientation];
         CGImageRef resultFinalImage = [self CGImageRotated:finalImage withRadians:radians];
