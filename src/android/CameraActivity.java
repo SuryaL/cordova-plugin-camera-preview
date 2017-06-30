@@ -395,16 +395,17 @@ public class CameraActivity extends Fragment {
       try {
                new Thread() {
               public void run() {
+        byte[] byteArray = data;
         if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
           Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
           bitmap = flipBitmap(bitmap);
 
           ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
-          data = outputStream.toByteArray();
+          byteArray = outputStream.toByteArray();
         }
 
-        String encodedImage = Base64.encodeToString(data, Base64.NO_WRAP);
+        String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
 
         eventListener.onPictureTaken(encodedImage);
         Log.d(TAG, "CameraPreview pictureTakenHandler called back");
