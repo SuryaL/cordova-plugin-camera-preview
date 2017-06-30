@@ -371,46 +371,55 @@ public class CameraActivity extends Fragment {
     }
   };
 
+  public static Bitmap rotateBitmap(Bitmap source, float angle, boolean mirror) {
+    Matrix matrix = new Matrix();
+    if (mirror) {
+      matrix.preScale(-1.0f, 1.0f);
+    }
+    matrix.postRotate(angle);
+    return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+  }
+
   PictureCallback jpegPictureCallback = new PictureCallback(){
     public void onPictureTaken(final byte[] data, Camera arg1){
       Log.d(TAG, "CameraPreview jpegPictureCallback");
 // <<<<<<< HEAD
-//       final Camera.Parameters params = mCamera.getParameters();
-//       try {
-//           new Thread() {
-//               public void run() {
-//                   Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,data.length);
-//                   bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
-//                   ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//                   bitmap.compress(Bitmap.CompressFormat.JPEG, params.getJpegQuality(), outputStream);
-//                   byte[] byteArray = outputStream.toByteArray();
-//                   String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
-//                   eventListener.onPictureTaken(encodedImage);
-//                   Log.d(TAG, "CameraPreview pictureTakenHandler called back");
-//               }
-//           }.start();
+//      final Camera.Parameters params = mCamera.getParameters();
+      try {
+        new Thread() {
+          public void run() {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,data.length);
+            bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
+            byte[] byteArray = outputStream.toByteArray();
+            String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
+            eventListener.onPictureTaken(encodedImage);
+            Log.d(TAG, "CameraPreview pictureTakenHandler called back");
+          }
+        }.start();
 
 // =======
 
-      try {
-               new Thread() {
-              public void run() {
-        byte[] byteArray = data;
-        if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-          Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-          bitmap = flipBitmap(bitmap);
+        // try {
+        //          new Thread() {
+        //         public void run() {
+        //   byte[] byteArray = data;
+        //   if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+        //     Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+        //     bitmap = flipBitmap(bitmap);
 
-          ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-          bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
-          byteArray = outputStream.toByteArray();
-        }
+        //     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        //     bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
+        //     byteArray = outputStream.toByteArray();
+        //   }
 
-        String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
+        //   String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
 
-        eventListener.onPictureTaken(encodedImage);
-        Log.d(TAG, "CameraPreview pictureTakenHandler called back");
-              }
-          }.start();
+        //   eventListener.onPictureTaken(encodedImage);
+        //   Log.d(TAG, "CameraPreview pictureTakenHandler called back");
+        //         }
+        //     }.start();
 // >>>>>>> d2a671a65987b5d3a77b5407c8520227ef434d1f
       } catch (OutOfMemoryError e) {
         // most likely failed to allocate memory for rotateBitmap
@@ -504,29 +513,29 @@ public class CameraActivity extends Fragment {
 
       canTakePicture = false;
 
-        Camera.Parameters params = mCamera.getParameters();
+      Camera.Parameters params = mCamera.getParameters();
 
 // <<<<<<< HEAD
 //         Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
 //         params.setPictureSize(size.width, size.height);
 //         params.setJpegQuality(quality);
 // =======
-          Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
-          params.setPictureSize(size.width, size.height);
-          currentQuality = quality;
+      Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
+      params.setPictureSize(size.width, size.height);
+      currentQuality = quality;
 
-          if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            // The image will be recompressed in the callback
-            params.setJpegQuality(99);
-          } else {
-            params.setJpegQuality(quality);
-          }
+      if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+        // The image will be recompressed in the callback
+        params.setJpegQuality(99);
+      } else {
+        params.setJpegQuality(quality);
+      }
 
-          params.setRotation(mPreview.getDisplayOrientation());
+      params.setRotation(mPreview.getDisplayOrientation());
 // >>>>>>> d2a671a65987b5d3a77b5407c8520227ef434d1f
 
-        mCamera.setParameters(params);
-        mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
+      mCamera.setParameters(params);
+      mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
     } else {
       canTakePicture = true;
     }
@@ -560,10 +569,10 @@ public class CameraActivity extends Fragment {
 
   private Rect calculateTapArea(float x, float y, float coefficient) {
     return new Rect(
-      Math.round((x - 100) * 2000 / width  - 1000),
-      Math.round((y - 100) * 2000 / height - 1000),
-      Math.round((x + 100) * 2000 / width  - 1000),
-      Math.round((y + 100) * 2000 / height - 1000)
+            Math.round((x - 100) * 2000 / width  - 1000),
+            Math.round((y - 100) * 2000 / height - 1000),
+            Math.round((x + 100) * 2000 / width  - 1000),
+            Math.round((y + 100) * 2000 / height - 1000)
     );
   }
 }
