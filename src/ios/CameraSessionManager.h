@@ -2,6 +2,10 @@
 #import <AVFoundation/AVFoundation.h>
 #import "TemperatureAndTint.h"
 
+@protocol OnFocusDelegate
+- (void) onFocus;
+@end;
+
 @interface CameraSessionManager : NSObject
 
 - (CameraSessionManager *)init;
@@ -11,8 +15,8 @@
 - (NSString *) setFocusMode:(NSString *)focusMode;
 - (NSArray *) getFlashModes;
 - (NSInteger) getFlashMode;
-- (void) setupSession:(NSString *)defaultCamera;
-- (void) switchCamera;
+- (void) setupSession:(NSString *)defaultCamera completion:(void(^)(BOOL started))completion;
+- (void) switchCamera:(void(^)(BOOL switched))completion;
 - (void) setFlashMode:(NSInteger)flashMode;
 - (void) setZoom:(CGFloat)desiredZoomFactor;
 - (CGFloat) getZoom;
@@ -28,6 +32,7 @@
 - (NSString *) setWhiteBalanceMode:(NSString *)whiteBalanceMode;
 - (void) updateOrientation:(AVCaptureVideoOrientation)orientation;
 - (void) tapToFocus:(CGFloat)xPoint yPoint:(CGFloat)yPoint;
+- (void) takePictureOnFocus;
 - (void) setTorchMode;
 - (AVCaptureVideoOrientation) getCurrentOrientation:(UIInterfaceOrientation)toInterfaceOrientation;
 

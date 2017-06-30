@@ -11,6 +11,7 @@ Cordova plugin that allows camera interaction from Javascript and HTML
 
 <ul>
   <li>Start a camera preview from HTML code.</li>
+  <li>Maintain HTML interactivity.</li>
   <li>Drag the preview box.</li>
   <li>Set camera color effect.</li>
   <li>Send the preview box to back of the HTML content.</li>
@@ -18,14 +19,6 @@ Cordova plugin that allows camera interaction from Javascript and HTML
   <li>Set a custom size for the preview box.</li>
   <li>Set a custom alpha for the preview box.</li>
   <li>Set the focus mode, zoom, color effects, exposure mode, white balance mode and exposure compensation</li>
-  <li>Maintain HTML interactivity.</li>
-</ul>
-
-### iOS only features
-
-These are some features that are currently iOS only, however we would love to see PR's for this functionality in Android.
-
-<ul>
   <li>Tap to focus</li>
 </ul>
 
@@ -57,6 +50,21 @@ meteor add cordova:cordova-plugin-camera-preview@X.X.X
 <gap:plugin name="cordova-plugin-camera-preview" />
 ```
 
+#### iOS Quirks
+If you are developing for iOS 10+ you must also add the following to your config.xml
+
+```xml
+<config-file platform="ios" target="*-Info.plist" parent="NSCameraUsageDescription">
+  <string>Allow the app to use your camera</string>
+</config-file>
+
+<!-- or for Phonegap -->
+
+<gap:config-file platform="ios" target="*-Info.plist" parent="NSCameraUsageDescription" overwrite="true">
+  <string>Allow the app to use your camera</string>
+</gap:config-file>
+```
+
 # Methods
 
 ### startCamera(options, [successCallback, errorCallback])
@@ -74,6 +82,7 @@ All options stated are optional and will default to values here
 * `camera` - See <code>[CAMERA_DIRECTION](#camera_Settings.CameraDirection)</code> - Defaults to front camera/code>
 * `toBack` - Defaults to false - Set to true if you want your html in front of your preview
 * `tapPhoto` - Defaults to true - Does not work if toBack is set to false in which case you use the takePicture method
+* `tapFocus` - Defaults to false - Allows the user to tap to focus, when the view is in the foreground
 * `previewDrag` - Defaults to false - Does not work if toBack is set to false
 
 ```javascript
@@ -85,6 +94,7 @@ let options = {
   camera: CameraPreview.CAMERA_DIRECTION.BACK,
   toBack: false,
   tapPhoto: true,
+  tapFocus: false,
   previewDrag: false
 };
 
@@ -98,6 +108,8 @@ html, body, .ion-app, .ion-content {
   background-color: transparent;
 }
 ```
+
+When both tapFocus and tapPhoto are true, the camera will focus, and take a picture as soon as the camera is done focusing.
 
 ### stopCamera([successCallback, errorCallback])
 
