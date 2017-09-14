@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
+import android.media.ExifInterface;
 import android.util.Base64;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -33,10 +34,15 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.os.Environment;
+import java.io.File;
 
 import org.apache.cordova.LOG;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.Exception;
 import java.lang.Integer;
@@ -48,7 +54,7 @@ import java.util.Arrays;
 public class CameraActivity extends Fragment {
 
   public interface CameraPreviewListener {
-    void onPictureTaken(String originalPicture);
+    void onPictureTaken(String originalPicture, JSONObject metadata);
     void onPictureTakenError(String message);
     void onFocusSet(int pointX, int pointY);
     void onFocusSetError(String message);
@@ -76,13 +82,14 @@ public class CameraActivity extends Fragment {
   public boolean tapToTakePicture;
   public boolean dragEnabled;
   public boolean tapToFocus;
+    public String dataDir;
 
   public int width;
   public int height;
   public int x;
   public int y;
 
-  public void setEventListener(CameraPreviewListener listener){
+  public void setEventListener(CameraPreviewListener listener) {
     eventListener = listener;
   }
 
@@ -98,15 +105,15 @@ public class CameraActivity extends Fragment {
     return view;
   }
 
-  public void setRect(int x, int y, int width, int height){
+  public void setRect(int x, int y, int width, int height) {
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
   }
 
-  private void createCameraPreview(){
-    if(mPreview == null) {
+  private void createCameraPreview() {
+    if (mPreview == null) {
       setDefaultCameraId();
 
       //set box position and size
@@ -143,7 +150,7 @@ public class CameraActivity extends Fragment {
               boolean isSingleTapTouch = gestureDetector.onTouchEvent(event);
               if (event.getAction() != MotionEvent.ACTION_MOVE && isSingleTapTouch) {
                 if (tapToTakePicture && tapToFocus) {
-                  setFocusArea((int)event.getX(0), (int)event.getY(0), new Camera.AutoFocusCallback() {
+                  setFocusArea((int) event.getX(0), (int) event.getY(0), new Camera.AutoFocusCallback() {
                     public void onAutoFocus(boolean success, Camera camera) {
                       if (success) {
                         takePicture(0, 0, 85);
@@ -153,11 +160,11 @@ public class CameraActivity extends Fragment {
                     }
                   });
 
-                } else if(tapToTakePicture){
+                } else if (tapToTakePicture) {
                   takePicture(0, 0, 85);
 
-                } else if(tapToFocus){
-                  setFocusArea((int)event.getX(0), (int)event.getY(0), new Camera.AutoFocusCallback() {
+                } else if (tapToFocus) {
+                  setFocusArea((int) event.getX(0), (int) event.getY(0), new Camera.AutoFocusCallback() {
                     public void onAutoFocus(boolean success, Camera camera) {
                       if (success) {
                         // A callback to JS might make sense here.
@@ -175,13 +182,12 @@ public class CameraActivity extends Fragment {
 
                   switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                      if(mLastTouchX == 0 || mLastTouchY == 0) {
-                        mLastTouchX = (int)event.getRawX() - layoutParams.leftMargin;
-                        mLastTouchY = (int)event.getRawY() - layoutParams.topMargin;
-                      }
-                      else{
-                        mLastTouchX = (int)event.getRawX();
-                        mLastTouchY = (int)event.getRawY();
+                      if (mLastTouchX == 0 || mLastTouchY == 0) {
+                        mLastTouchX = (int) event.getRawX() - layoutParams.leftMargin;
+                        mLastTouchY = (int) event.getRawY() - layoutParams.topMargin;
+                      } else {
+                        mLastTouchX = (int) event.getRawX();
+                        mLastTouchY = (int) event.getRawY();
                       }
                       break;
                     case MotionEvent.ACTION_MOVE:
@@ -218,7 +224,7 @@ public class CameraActivity extends Fragment {
     }
   }
 
-  private void setDefaultCameraId(){
+  private void setDefaultCameraId() {
     // Find the total number of cameras available
     numberOfCameras = Camera.getNumberOfCameras();
 
@@ -247,7 +253,7 @@ public class CameraActivity extends Fragment {
 
     cameraCurrentlyLocked = defaultCameraId;
 
-    if(mPreview.mPreviewSize == null){
+    if (mPreview.mPreviewSize == null) {
       mPreview.setCamera(mCamera, cameraCurrentlyLocked);
       eventListener.onCameraStarted();
     } else {
@@ -299,7 +305,7 @@ public class CameraActivity extends Fragment {
     // check for availability of multiple cameras
     if (numberOfCameras == 1) {
       //There is only one camera available
-    }else{
+    } else {
       Log.d(TAG, "numberOfCameras: " + numberOfCameras);
 
       // OK, we have multiple cameras. Release this camera -> cameraCurrentlyLocked
@@ -325,13 +331,13 @@ public class CameraActivity extends Fragment {
         Log.d(TAG, "camera parameter not null");
 
         // Check for flashMode as well to prevent error on frontward facing camera.
-        List<String> supportedFlashModesNewCamera = mCamera.getParameters().getSupportedFlashModes();
+        List < String > supportedFlashModesNewCamera = mCamera.getParameters().getSupportedFlashModes();
         String currentFlashModePreviousCamera = cameraParameters.getFlashMode();
         if (supportedFlashModesNewCamera != null && supportedFlashModesNewCamera.contains(currentFlashModePreviousCamera)) {
           Log.d(TAG, "current flash mode supported on new camera. setting params");
-         /* mCamera.setParameters(cameraParameters);
-            The line above is disabled because parameters that can actually be changed are different from one device to another. Makes less sense trying to reconfigure them when changing camera device while those settings gan be changed using plugin methods.
-         */
+                    /* mCamera.setParameters(cameraParameters);
+                       The line above is disabled because parameters that can actually be changed are different from one device to another. Makes less sense trying to reconfigure them when changing camera device while those settings gan be changed using plugin methods.
+                    */
         } else {
           Log.d(TAG, "current flash mode NOT supported on new camera");
         }
@@ -354,7 +360,7 @@ public class CameraActivity extends Fragment {
     }
   }
 
-  public boolean hasFrontCamera(){
+  public boolean hasFrontCamera() {
     return getActivity().getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT);
   }
 
@@ -365,8 +371,8 @@ public class CameraActivity extends Fragment {
     return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
   }
 
-  ShutterCallback shutterCallback = new ShutterCallback(){
-    public void onShutter(){
+  ShutterCallback shutterCallback = new ShutterCallback() {
+    public void onShutter() {
       // do nothing, availabilty of this callback causes default system shutter sound to work
     }
   };
@@ -380,47 +386,72 @@ public class CameraActivity extends Fragment {
     return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
   }
 
-  PictureCallback jpegPictureCallback = new PictureCallback(){
-    public void onPictureTaken(final byte[] data, Camera arg1){
+  private File thumbnailPathFromMediaId(String mediaId) {
+    File thumbnailPath = null;
+      String thumbnailName = mediaId + "_mthumb.png";
+    File dir = new File(dataDir, "FFTemp");
+    if (!dir.exists()) {
+      if (!dir.mkdirs()) {
+        Log.e("Mendr", "Failed to create storage directory.");
+        return thumbnailPath;
+      }
+    }
+
+    thumbnailPath = new File(dir.getPath() + File.separator + thumbnailName);
+
+    return thumbnailPath;
+  }
+  PictureCallback jpegPictureCallback = new PictureCallback() {
+    public void onPictureTaken(final byte[] data, Camera arg1) {
       Log.d(TAG, "CameraPreview jpegPictureCallback");
-// <<<<<<< HEAD
-//      final Camera.Parameters params = mCamera.getParameters();
       try {
         new Thread() {
           public void run() {
-            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,data.length);
+            File pictureFile = thumbnailPathFromMediaId("12345");
+
+            try {
+              FileOutputStream fos = new FileOutputStream(pictureFile);
+              fos.write(data);
+              fos.close();
+            } catch (Exception error) {
+              Log.d(TAG, "File not saved: " + error.getMessage());
+            }
+
+            //Step 3. Get Exif Info from File path
+            ExifInterface exif;
+            JSONObject metadata = new JSONObject();
+
+            try {
+                exif = new ExifInterface(pictureFile.getPath());
+
+                JSONObject exifData = new JSONObject();
+                exifData.put("ApertureValue", exif.getAttribute(ExifInterface.TAG_APERTURE_VALUE));
+                exifData.put("FNumber", exif.getAttribute(ExifInterface.TAG_F_NUMBER));
+                exifData.put("FocalLength", exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH));
+                exifData.put("FocalLenIn35mmFilm", exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM));
+                exifData.put("XResolution", exif.getAttribute(ExifInterface.TAG_X_RESOLUTION));
+                exifData.put("YResolution", exif.getAttribute(ExifInterface.TAG_Y_RESOLUTION));
+                exifData.put("Orientation", exif.getAttribute(ExifInterface.TAG_ORIENTATION));
+                exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
+                exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
+
+                metadata.put("{Exif}", exifData);
+
+                pictureFile.delete();
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
             bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
+            bitmap.compress(CompressFormat.JPEG, currentQuality, outputStream);
             byte[] byteArray = outputStream.toByteArray();
             String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
-            eventListener.onPictureTaken(encodedImage);
+            eventListener.onPictureTaken(encodedImage, metadata);
             Log.d(TAG, "CameraPreview pictureTakenHandler called back");
           }
         }.start();
-
-// =======
-
-        // try {
-        //          new Thread() {
-        //         public void run() {
-        //   byte[] byteArray = data;
-        //   if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-        //     Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        //     bitmap = flipBitmap(bitmap);
-
-        //     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        //     bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
-        //     byteArray = outputStream.toByteArray();
-        //   }
-
-        //   String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
-
-        //   eventListener.onPictureTaken(encodedImage);
-        //   Log.d(TAG, "CameraPreview pictureTakenHandler called back");
-        //         }
-        //     }.start();
-// >>>>>>> d2a671a65987b5d3a77b5407c8520227ef434d1f
       } catch (OutOfMemoryError e) {
         // most likely failed to allocate memory for rotateBitmap
         Log.d(TAG, "CameraPreview OutOfMemoryError");
@@ -435,14 +466,14 @@ public class CameraActivity extends Fragment {
     }
   };
 
-  private Camera.Size getOptimalPictureSize(final int width, final int height, final Camera.Size previewSize, final List<Camera.Size> supportedSizes){
-    /*
-      get the supportedPictureSize that:
-      - matches exactly width and height
-      - has the closest aspect ratio to the preview aspect ratio
-      - has picture.width and picture.height closest to width and height
-      - has the highest supported picture width and height up to 2 Megapixel if width == 0 || height == 0
-    */
+  private Camera.Size getOptimalPictureSize(final int width, final int height, final Camera.Size previewSize, final List < Camera.Size > supportedSizes) {
+        /*
+          get the supportedPictureSize that:
+          - matches exactly width and height
+          - has the closest aspect ratio to the preview aspect ratio
+          - has picture.width and picture.height closest to width and height
+          - has the highest supported picture width and height up to 2 Megapixel if width == 0 || height == 0
+        */
     Camera.Size size = mCamera.new Size(width, height);
 
     // convert to landscape if necessary
@@ -452,7 +483,7 @@ public class CameraActivity extends Fragment {
       size.height = temp;
     }
 
-    double previewAspectRatio  = (double)previewSize.width / (double)previewSize.height;
+    double previewAspectRatio = (double) previewSize.width / (double) previewSize.height;
 
     if (previewAspectRatio < 1.0) {
       // reset ratio to landscape
@@ -473,7 +504,7 @@ public class CameraActivity extends Fragment {
         return supportedSize;
       }
 
-      double difference = Math.abs(previewAspectRatio - ((double)supportedSize.width / (double)supportedSize.height));
+      double difference = Math.abs(previewAspectRatio - ((double) supportedSize.width / (double) supportedSize.height));
 
       if (difference < bestDifference - aspectTolerance) {
         // better aspectRatio found
@@ -503,11 +534,11 @@ public class CameraActivity extends Fragment {
     return size;
   }
 
-  public void takePicture(final int width, final int height, final int quality){
+  public void takePicture(final int width, final int height, final int quality) {
     Log.d(TAG, "CameraPreview takePicture width: " + width + ", height: " + height + ", quality: " + quality);
 
-    if(mPreview != null) {
-      if(!canTakePicture){
+    if (mPreview != null) {
+      if (!canTakePicture) {
         return;
       }
 
@@ -515,16 +546,16 @@ public class CameraActivity extends Fragment {
 
       Camera.Parameters params = mCamera.getParameters();
 
-// <<<<<<< HEAD
-//         Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
-//         params.setPictureSize(size.width, size.height);
-//         params.setJpegQuality(quality);
-// =======
+      // <<<<<<< HEAD
+      //         Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
+      //         params.setPictureSize(size.width, size.height);
+      //         params.setJpegQuality(quality);
+      // =======
       Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
       params.setPictureSize(size.width, size.height);
       currentQuality = quality;
 
-      if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+      if (cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
         // The image will be recompressed in the callback
         params.setJpegQuality(99);
       } else {
@@ -532,7 +563,7 @@ public class CameraActivity extends Fragment {
       }
 
       params.setRotation(mPreview.getDisplayOrientation());
-// >>>>>>> d2a671a65987b5d3a77b5407c8520227ef434d1f
+      // >>>>>>> d2a671a65987b5d3a77b5407c8520227ef434d1f
 
       mCamera.setParameters(params);
       mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
@@ -569,9 +600,9 @@ public class CameraActivity extends Fragment {
 
   private Rect calculateTapArea(float x, float y, float coefficient) {
     return new Rect(
-            Math.round((x - 100) * 2000 / width  - 1000),
+            Math.round((x - 100) * 2000 / width - 1000),
             Math.round((y - 100) * 2000 / height - 1000),
-            Math.round((x + 100) * 2000 / width  - 1000),
+            Math.round((x + 100) * 2000 / width - 1000),
             Math.round((y + 100) * 2000 / height - 1000)
     );
   }

@@ -1,7 +1,7 @@
 #import <Cordova/CDV.h>
 #import <Cordova/CDVPlugin.h>
 #import <Cordova/CDVInvokedUrlCommand.h>
-
+#import <CoreMedia/CMAttachment.h>
 #import "CameraPreview.h"
 
 @implementation CameraPreview
@@ -647,6 +647,8 @@
     AVCaptureConnection *connection = [self.sessionManager.stillImageOutput connectionWithMediaType:AVMediaTypeVideo];
     [self.sessionManager.stillImageOutput captureStillImageAsynchronouslyFromConnection:connection completionHandler:^(CMSampleBufferRef sampleBuffer, NSError *error) {
 
+
+
       NSLog(@"Done creating still image");
 
       if (error) {
@@ -654,8 +656,12 @@
       } else {
         NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:sampleBuffer];
         UIImage *capturedImage  = [[UIImage alloc] initWithData:imageData];
+          
+        CFDictionaryRef attachments = CMCopyDictionaryOfAttachments(kCFAllocatorDefault, sampleBuffer, kCMAttachmentMode_ShouldPropagate);
 
-        CIImage *capturedCImage;
+//        NSLog(@"%@", attachments);
+
+          CIImage *capturedCImage;
         //image resize
 
         if(width > 0 && height > 0){
@@ -713,6 +719,8 @@
         CGImageRelease(resultFinalImage); // release CGImageRef to remove memory leaks
 
         [params addObject:base64Image];
+          
+          [params addObject:(__bridge id _Nonnull)(attachments)];
 
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:params];
         [pluginResult setKeepCallbackAsBool:true];
