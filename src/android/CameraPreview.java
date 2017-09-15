@@ -326,10 +326,10 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
     return true;
   }
 
-    private Integer getCameraId() {
+    private Integer getCameraIndex() {
         // Find the total number of cameras available
         Integer numberOfCameras = Camera.getNumberOfCameras();
-        Integer cameraId = 0;
+        Integer cameraIndex = 1;
         int camId = fragment.defaultCamera.equals("front") ? Camera.CameraInfo.CAMERA_FACING_FRONT : Camera.CameraInfo.CAMERA_FACING_BACK;
 
         // Find the ID of the default camera
@@ -337,12 +337,12 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
         for (int i = 0; i < numberOfCameras; i++) {
             Camera.getCameraInfo(i, cameraInfo);
             if (cameraInfo.facing == camId) {
-                cameraId = camId;
+                cameraIndex = i;
                 break;
             }
         }
 
-        return cameraId;
+        return cameraIndex;
     }
 
     public void onPictureTaken(String originalPicture, JSONObject metadata) {
@@ -351,7 +351,7 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
             try {
                 JSONObject exifData = (JSONObject) metadata.get("{Exif}");
 
-                exifData.put("SensorSize", getCameraResolution(getCameraId()));
+                exifData.put("SensorSize", getCameraResolution(getCameraIndex()));
 
                 metadata.put("{Exif}", exifData);
                 metadata.put("android", true);

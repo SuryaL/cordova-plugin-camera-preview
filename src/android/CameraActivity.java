@@ -420,7 +420,7 @@ public class CameraActivity extends Fragment {
             //Step 3. Get Exif Info from File path
             ExifInterface exif;
             JSONObject metadata = new JSONObject();
-
+            String orient = "0";
             try {
                 exif = new ExifInterface(pictureFile.getPath());
 
@@ -432,8 +432,14 @@ public class CameraActivity extends Fragment {
                 exifData.put("XResolution", exif.getAttribute(ExifInterface.TAG_X_RESOLUTION));
                 exifData.put("YResolution", exif.getAttribute(ExifInterface.TAG_Y_RESOLUTION));
                 exifData.put("Orientation", exif.getAttribute(ExifInterface.TAG_ORIENTATION));
-                exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
-                exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
+                orient = exif.getAttribute(ExifInterface.TAG_ORIENTATION);
+                if(orient.equals("0")){
+                  exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
+                  exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
+                }else{
+                  exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
+                  exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
+                }
 
                 metadata.put("{Exif}", exifData);
 
@@ -443,7 +449,9 @@ public class CameraActivity extends Fragment {
             }
 
             Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
+            if(!orient.equals("0")){
+              bitmap = rotateBitmap(bitmap, mPreview.getDisplayOrientation(), cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT);
+            }
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             bitmap.compress(CompressFormat.JPEG, currentQuality, outputStream);
             byte[] byteArray = outputStream.toByteArray();
