@@ -1,12 +1,17 @@
 package com.cordovaplugincamerapreview;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.SizeF;
 import android.util.TypedValue;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -209,6 +214,27 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
     return true;
   }
 
+  private SizeF getCameraResolution(int camNum)
+  {
+    SizeF size = new SizeF(0,0);
+    CameraManager manager = (CameraManager) this.cordova.getActivity().getSystemService(Context.CAMERA_SERVICE);
+    try {
+      String[] cameraIds = manager.getCameraIdList();
+      if (cameraIds.length > camNum) {
+        CameraCharacteristics character = manager.getCameraCharacteristics(cameraIds[camNum]);
+        size = character.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+      }
+    }
+    catch (CameraAccessException e)
+    {
+      Log.e("YourLogString", e.getMessage(), e);
+    }
+
+    Log.d(TAG, "getCameraResolution: " + size.toString());
+    return size;
+  }
+
+
   private boolean startCamera(int x, int y, int width, int height, String defaultCamera, Boolean tapToTakePicture, Boolean dragEnabled, final Boolean toBack, String alpha, boolean tapFocus, CallbackContext callbackContext) {
     Log.d(TAG, "start camera action");
     if (fragment != null) {
@@ -300,8 +326,39 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
     return true;
   }
 
-  public void onPictureTaken(String originalPicture, JSONObject metadata) {
+    private Integer getCameraId() {
+        // Find the total number of cameras available
+        Integer numberOfCameras = Camera.getNumberOfCameras();
+        Integer cameraId = 0;
+        int camId = fragment.defaultCamera.equals("front") ? Camera.CameraInfo.CAMERA_FACING_FRONT : Camera.CameraInfo.CAMERA_FACING_BACK;
+
+        // Find the ID of the default camera
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo);
+            if (cameraInfo.facing == camId) {
+                cameraId = camId;
+                break;
+            }
+        }
+
+        return cameraId;
+    }
+
+    public void onPictureTaken(String originalPicture, JSONObject metadata) {
     Log.d(TAG, "returning picture");
+
+            try {
+                JSONObject exifData = (JSONObject) metadata.get("{Exif}");
+
+                exifData.put("SensorSize", getCameraResolution(getCameraId()));
+
+                metadata.put("{Exif}", exifData);
+                metadata.put("android", true);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
     JSONArray data = new JSONArray();
     data.put(originalPicture);
