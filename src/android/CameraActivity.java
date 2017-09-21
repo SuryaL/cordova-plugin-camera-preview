@@ -21,6 +21,7 @@ import android.hardware.Camera.ShutterCallback;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.DisplayMetrics;
+import android.util.Size;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -82,7 +83,7 @@ public class CameraActivity extends Fragment {
   public boolean tapToTakePicture;
   public boolean dragEnabled;
   public boolean tapToFocus;
-    public String dataDir;
+  public String dataDir;
 
   public int width;
   public int height;
@@ -388,7 +389,7 @@ public class CameraActivity extends Fragment {
 
   private File thumbnailPathFromMediaId(String mediaId) {
     File thumbnailPath = null;
-      String thumbnailName = mediaId + "_mthumb.png";
+    String thumbnailName = mediaId + "_mthumb.png";
     File dir = new File(dataDir, "FFTemp");
     if (!dir.exists()) {
       if (!dir.mkdirs()) {
@@ -422,28 +423,28 @@ public class CameraActivity extends Fragment {
             JSONObject metadata = new JSONObject();
             String orient = "0";
             try {
-                exif = new ExifInterface(pictureFile.getPath());
+              exif = new ExifInterface(pictureFile.getPath());
 
-                JSONObject exifData = new JSONObject();
-                exifData.put("ApertureValue", exif.getAttribute(ExifInterface.TAG_APERTURE_VALUE));
-                exifData.put("FNumber", exif.getAttribute(ExifInterface.TAG_F_NUMBER));
-                exifData.put("FocalLength", exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH));
-                exifData.put("FocalLenIn35mmFilm", exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM));
-                exifData.put("XResolution", exif.getAttribute(ExifInterface.TAG_X_RESOLUTION));
-                exifData.put("YResolution", exif.getAttribute(ExifInterface.TAG_Y_RESOLUTION));
-                exifData.put("Orientation", exif.getAttribute(ExifInterface.TAG_ORIENTATION));
-                orient = exif.getAttribute(ExifInterface.TAG_ORIENTATION);
-                if(orient.equals("0")){
-                  exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
-                  exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
-                }else{
-                  exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
-                  exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
-                }
+              JSONObject exifData = new JSONObject();
+              exifData.put("ApertureValue", exif.getAttribute(ExifInterface.TAG_APERTURE_VALUE));
+              exifData.put("FNumber", exif.getAttribute(ExifInterface.TAG_F_NUMBER));
+              exifData.put("FocalLength", exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH));
+              exifData.put("FocalLenIn35mmFilm", exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM));
+              exifData.put("XResolution", exif.getAttribute(ExifInterface.TAG_X_RESOLUTION));
+              exifData.put("YResolution", exif.getAttribute(ExifInterface.TAG_Y_RESOLUTION));
+              exifData.put("Orientation", exif.getAttribute(ExifInterface.TAG_ORIENTATION));
+              orient = exif.getAttribute(ExifInterface.TAG_ORIENTATION);
+              if(orient.equals("0")){
+                exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
+                exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
+              }else{
+                exifData.put("PixelXDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION));
+                exifData.put("PixelYDimension", exif.getAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION));
+              }
 
-                metadata.put("{Exif}", exifData);
+              metadata.put("{Exif}", exifData);
 
-                pictureFile.delete();
+              pictureFile.delete();
             } catch (Exception e) {
               e.printStackTrace();
             }
@@ -474,7 +475,7 @@ public class CameraActivity extends Fragment {
     }
   };
 
-  private Camera.Size getOptimalPictureSize(final int width, final int height, final Camera.Size previewSize, final List < Camera.Size > supportedSizes) {
+  private Camera.Size getOptimalPictureSize(final int width, final int height, final Size previewSize, final List < Camera.Size > supportedSizes) {
         /*
           get the supportedPictureSize that:
           - matches exactly width and height
@@ -491,7 +492,7 @@ public class CameraActivity extends Fragment {
       size.height = temp;
     }
 
-    double previewAspectRatio = (double) previewSize.width / (double) previewSize.height;
+    double previewAspectRatio = (double) previewSize.getWidth() / (double) previewSize.getHeight();
 
     if (previewAspectRatio < 1.0) {
       // reset ratio to landscape
@@ -559,7 +560,11 @@ public class CameraActivity extends Fragment {
       //         params.setPictureSize(size.width, size.height);
       //         params.setJpegQuality(quality);
       // =======
-      Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
+//      Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
+
+      Size customSize = new Size(1600, 900);
+
+      Camera.Size size = getOptimalPictureSize(width, height, customSize, params.getSupportedPictureSizes());
       params.setPictureSize(size.width, size.height);
       currentQuality = quality;
 
