@@ -659,8 +659,6 @@
           
         CFDictionaryRef attachments = CMCopyDictionaryOfAttachments(kCFAllocatorDefault, sampleBuffer, kCMAttachmentMode_ShouldPropagate);
 
-//        NSLog(@"%@", attachments);
-
           CIImage *capturedCImage;
         //image resize
 
@@ -720,7 +718,10 @@
 
         [params addObject:base64Image];
           
-          [params addObject:(__bridge id _Nonnull)(attachments)];
+          
+          NSMutableDictionary * dictionary = [NSMutableDictionary dictionaryWithDictionary:(__bridge NSDictionary*) attachments];
+          [dictionary removeObjectForKey:@"{MakerApple}"];
+          [params addObject:dictionary];
 
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:params];
         [pluginResult setKeepCallbackAsBool:true];
