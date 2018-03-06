@@ -579,7 +579,7 @@ public class CameraActivity extends Fragment {
       // >>>>>>> d2a671a65987b5d3a77b5407c8520227ef434d1f
 
       mCamera.setParameters(params);
-      mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
+      mCamera.takePicture(null, null, jpegPictureCallback);
     } else {
       canTakePicture = true;
     }

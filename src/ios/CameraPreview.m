@@ -3,6 +3,7 @@
 #import <Cordova/CDVInvokedUrlCommand.h>
 #import <CoreMedia/CMAttachment.h>
 #import "CameraPreview.h"
+#import <AudioToolbox/AudioToolbox.h>
 
 @implementation CameraPreview
 
@@ -645,6 +646,23 @@
 
 - (void) invokeTakePicture:(CGFloat) width withHeight:(CGFloat) height withQuality:(CGFloat) quality{
     AVCaptureConnection *connection = [self.sessionManager.stillImageOutput connectionWithMediaType:AVMediaTypeVideo];
+      // disabled the sound
+     SystemSoundID soundID = 0;
+    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:NULL];
+    if (soundID == 0) {
+        NSString* absolutePath = [[NSBundle mainBundle] pathForResource:@"photoShutter2" ofType:@"caf"];
+        NSURL *filePath = [NSURL fileURLWithPath:absolutePath isDirectory:NO];
+        OSStatus status = AudioServicesCreateSystemSoundID((__bridge CFURLRef)filePath, &soundID);
+        }
+    
+    //    soundID = 1108;
+    AudioServicesPlaySystemSoundWithCompletion(soundID, ^{
+        AudioServicesDisposeSystemSoundID(soundID);
+    });
+    //  AudioServicesPlaySystemSound(soundID);
+    //    return;
+    
+    
     [self.sessionManager.stillImageOutput captureStillImageAsynchronouslyFromConnection:connection completionHandler:^(CMSampleBufferRef sampleBuffer, NSError *error) {
 
 
