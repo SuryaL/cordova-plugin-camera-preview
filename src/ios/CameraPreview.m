@@ -650,7 +650,7 @@
      SystemSoundID soundID = 0;
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:NULL];
     if (soundID == 0) {
-        NSString* absolutePath = [[NSBundle mainBundle] pathForResource:@"photoShutter2" ofType:@"caf"];
+        NSString* absolutePath = [[NSBundle mainBundle] pathForResource:@"CameraPreview.bundle/photoShutter2" ofType:@"caf"];
         NSURL *filePath = [NSURL fileURLWithPath:absolutePath isDirectory:NO];
         OSStatus status = AudioServicesCreateSystemSoundID((__bridge CFURLRef)filePath, &soundID);
         }
