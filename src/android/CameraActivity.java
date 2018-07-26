@@ -37,11 +37,13 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.os.Environment;
 import java.io.File;
+import android.support.media.ExifInterface;
 
 import org.apache.cordova.LOG;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -59,6 +61,7 @@ public class CameraActivity extends Fragment {
     void onPictureTakenError(String message);
     void onFocusSet(int pointX, int pointY);
     void onFocusSetError(String message);
+    void onBackButton();
     void onCameraStarted();
   }
 
@@ -84,6 +87,8 @@ public class CameraActivity extends Fragment {
   public boolean dragEnabled;
   public boolean tapToFocus;
   public String dataDir;
+  public boolean disableExifHeaderStripping;
+  public boolean toBack;
 
   public int width;
   public int height;
@@ -129,6 +134,14 @@ public class CameraActivity extends Fragment {
       mainLayout.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
       mainLayout.addView(mPreview);
       mainLayout.setEnabled(false);
+
+        if(toBack == false) {
+            this.setupTouchAndBackButton();
+        }
+
+    }
+  }
+  private void setupTouchAndBackButton() {
 
       final GestureDetector gestureDetector = new GestureDetector(getActivity().getApplicationContext(), new TapGestureDetector());
 
@@ -220,23 +233,36 @@ public class CameraActivity extends Fragment {
               return true;
             }
           });
+          frameContainerLayout.setFocusableInTouchMode(true);
+          frameContainerLayout.requestFocus();
+          frameContainerLayout.setOnKeyListener(new android.view.View.OnKeyListener() {
+            @Override
+            public boolean onKey(android.view.View v, int keyCode, android.view.KeyEvent event) {
+
+              if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+                eventListener.onBackButton();
+                return true;
+              }
+              return false;
+            }
+          });
         }
       });
-    }
+
   }
 
   private void setDefaultCameraId() {
     // Find the total number of cameras available
     numberOfCameras = Camera.getNumberOfCameras();
 
-    int camId = defaultCamera.equals("front") ? Camera.CameraInfo.CAMERA_FACING_FRONT : Camera.CameraInfo.CAMERA_FACING_BACK;
+    int facing = defaultCamera.equals("front") ? Camera.CameraInfo.CAMERA_FACING_FRONT : Camera.CameraInfo.CAMERA_FACING_BACK;
 
     // Find the ID of the default camera
     Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
     for (int i = 0; i < numberOfCameras; i++) {
       Camera.getCameraInfo(i, cameraInfo);
-      if (cameraInfo.facing == camId) {
-        defaultCameraId = camId;
+      if (cameraInfo.facing == facing) {
+        defaultCameraId = i;
         break;
       }
     }
@@ -274,11 +300,14 @@ public class CameraActivity extends Fragment {
         public void onGlobalLayout() {
           frameContainerLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
           frameContainerLayout.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-          final RelativeLayout frameCamContainerLayout = (RelativeLayout) view.findViewById(getResources().getIdentifier("frame_camera_cont", "id", appResourcesPackage));
+          Activity activity = getActivity();
+          if (isAdded() && activity != null) {
+            final RelativeLayout frameCamContainerLayout = (RelativeLayout) view.findViewById(getResources().getIdentifier("frame_camera_cont", "id", appResourcesPackage));
 
-          FrameLayout.LayoutParams camViewLayout = new FrameLayout.LayoutParams(frameContainerLayout.getWidth(), frameContainerLayout.getHeight());
-          camViewLayout.gravity = Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL;
-          frameCamContainerLayout.setLayoutParams(camViewLayout);
+            FrameLayout.LayoutParams camViewLayout = new FrameLayout.LayoutParams(frameContainerLayout.getWidth(), frameContainerLayout.getHeight());
+            camViewLayout.gravity = Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL;
+            frameCamContainerLayout.setLayoutParams(camViewLayout);
+          }
         }
       });
     }
@@ -365,10 +394,7 @@ public class CameraActivity extends Fragment {
     return getActivity().getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT);
   }
 
-  public static Bitmap flipBitmap(Bitmap source) {
-    Matrix matrix = new Matrix();
-    matrix.preScale(1.0f, -1.0f);
-
+  public static Bitmap applyMatrix(Bitmap source, Matrix matrix) {
     return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
   }
 
@@ -378,6 +404,7 @@ public class CameraActivity extends Fragment {
     }
   };
 
+// <<<<<<< HEAD
   public static Bitmap rotateBitmap(Bitmap source, float angle, boolean mirror) {
     Matrix matrix = new Matrix();
     if (mirror) {
@@ -397,15 +424,24 @@ public class CameraActivity extends Fragment {
         return thumbnailPath;
       }
     }
-
     thumbnailPath = new File(dir.getPath() + File.separator + thumbnailName);
 
     return thumbnailPath;
   }
+  private static int exifToDegrees(int exifOrientation) {
+    if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) { return 90; }
+    else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {  return 180; }
+    else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {  return 270; }
+    return 0;
+  }
+
+
+
   PictureCallback jpegPictureCallback = new PictureCallback() {
     public void onPictureTaken(final byte[] data, Camera arg1) {
       Log.d(TAG, "CameraPreview jpegPictureCallback");
       try {
+// <<<<<<< HEAD
         new Thread() {
           public void run() {
             File pictureFile = thumbnailPathFromMediaId("12345");
@@ -443,6 +479,32 @@ public class CameraActivity extends Fragment {
               }
 
               metadata.put("{Exif}", exifData);
+// =======
+//         if (!disableExifHeaderStripping) {
+//           Matrix matrix = new Matrix();
+//           if (cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+//             matrix.preScale(1.0f, -1.0f);
+//           }
+
+//           ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
+//           int rotation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+//           int rotationInDegrees = exifToDegrees(rotation);
+
+//           if (rotation != 0f) {
+//             matrix.preRotate(rotationInDegrees);
+//           }
+
+//           // Check if matrix has changed. In that case, apply matrix and override data
+//           if (!matrix.isIdentity()) {
+//             Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+//             bitmap = applyMatrix(bitmap, matrix);
+
+//             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//             bitmap.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream);
+//             data = outputStream.toByteArray();
+//           }
+//         }
+// >>>>>>> 1d38bf565aab550cee4bc146ea177270990f0191
 
               pictureFile.delete();
             } catch (Exception e) {
@@ -466,6 +528,9 @@ public class CameraActivity extends Fragment {
         Log.d(TAG, "CameraPreview OutOfMemoryError");
         // failed to allocate memory
         eventListener.onPictureTakenError("Picture too large (memory)");
+      } catch (IOException e) {
+        Log.d(TAG, "CameraPreview IOException");
+        eventListener.onPictureTakenError("IO Error when extracting exif");
       } catch (Exception e) {
         Log.d(TAG, "CameraPreview onPictureTaken general exception");
       } finally {
@@ -493,6 +558,9 @@ public class CameraActivity extends Fragment {
     }
 
     double previewAspectRatio = (double) previewSize.getWidth() / (double) previewSize.getHeight();
+    Camera.Size requestedSize = mCamera.new Size(size.width, size.height);
+
+    // double previewAspectRatio  = (double)previewSize.width / (double)previewSize.height;
 
     if (previewAspectRatio < 1.0) {
       // reset ratio to landscape
@@ -508,7 +576,7 @@ public class CameraActivity extends Fragment {
       Camera.Size supportedSize = supportedSizes.get(i);
 
       // Perfect match
-      if (supportedSize.equals(size)) {
+      if (supportedSize.equals(requestedSize)) {
         Log.d(TAG, "CameraPreview optimalPictureSize " + supportedSize.width + 'x' + supportedSize.height);
         return supportedSize;
       }
@@ -612,6 +680,18 @@ public class CameraActivity extends Fragment {
   }
 
   private Rect calculateTapArea(float x, float y, float coefficient) {
+    if (x < 100) {
+      x = 100;
+    }
+    if (x > width - 100) {
+      x = width - 100;
+    }
+    if (y < 100) {
+      y = 100;
+    }
+    if (y > height - 100) {
+      y = height - 100;
+    }
     return new Rect(
             Math.round((x - 100) * 2000 / width - 1000),
             Math.round((y - 100) * 2000 / height - 1000),
