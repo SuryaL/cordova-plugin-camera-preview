@@ -34,7 +34,6 @@
     BOOL toBack = (BOOL)[command.arguments[7] boolValue];
     CGFloat alpha = (CGFloat)[command.arguments[8] floatValue];
     BOOL tapToFocus = (BOOL) [command.arguments[9] boolValue];
-    BOOL disableExifHeaderStripping = (BOOL) [command.arguments[10] boolValue]; // ignore Android only
 
     // Create the session manager
     self.sessionManager = [[CameraSessionManager alloc] init];
@@ -80,36 +79,23 @@
 }
 
 - (void) stopCamera:(CDVInvokedUrlCommand*)command {
-    
-    NSLog(@"stopCamera");
-    
+  NSLog(@"stopCamera");
+  CDVPluginResult *pluginResult;
+
+  if(self.sessionManager != nil) {
     [self.cameraRenderController.view removeFromSuperview];
     [self.cameraRenderController removeFromParentViewController];
+
     self.cameraRenderController = nil;
-    
-    [self.commandDelegate runInBackground:^{
-        
-        CDVPluginResult *pluginResult;
-        if(self.sessionManager != nil) {
-            
-            for(AVCaptureInput *input in self.sessionManager.session.inputs) {
-                [self.sessionManager.session removeInput:input];
-            }
-            
-            for(AVCaptureOutput *output in self.sessionManager.session.outputs) {
-                [self.sessionManager.session removeOutput:output];
-            }
-            
-            [self.sessionManager.session stopRunning];
-            self.sessionManager = nil;
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-        }
-        else {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Camera not started"];
-        }
-        
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }];
+    self.sessionManager = nil;
+
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+  }
+  else {
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Camera not started"];
+  }
+
+  [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 - (void) hideCamera:(CDVInvokedUrlCommand*)command {
@@ -187,7 +173,7 @@
 - (void) setFocusMode:(CDVInvokedUrlCommand*)command {
   CDVPluginResult *pluginResult;
 
-  NSString * focusMode = [command.arguments objectAtIndex:0];
+  NSString * focusMode = [[command.arguments objectAtIndex:0] stringValue];
   if (self.sessionManager != nil) {
     [self.sessionManager setFocusMode:focusMode];
     NSString * focusMode = [self.sessionManager getFocusMode];
@@ -290,20 +276,6 @@
   if (self.sessionManager != nil) {
     CGFloat zoom = [self.sessionManager getZoom];
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDouble:zoom ];
-  } else {
-    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Session not started"];
-  }
-
-  [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-}
-
-- (void) getHorizontalFOV:(CDVInvokedUrlCommand*)command {
-
-  CDVPluginResult *pluginResult;
-
-  if (self.sessionManager != nil) {
-    float fov = [self.sessionManager getHorizontalFOV];
-    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDouble:fov ];
   } else {
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Session not started"];
   }

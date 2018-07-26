@@ -30,8 +30,8 @@ CameraPreview.startCamera = function(options, onSuccess, onError) {
     if (typeof(options.alpha) === 'undefined') {
         options.alpha = 1;
     }
-    options.disableExifHeaderStripping = options.disableExifHeaderStripping || false;
-    exec(onSuccess, onError, PLUGIN_NAME, "startCamera", [options.x, options.y, options.width, options.height, options.camera, options.tapPhoto, options.previewDrag, options.toBack, options.alpha, options.tapFocus, options.disableExifHeaderStripping]);
+
+    exec(onSuccess, onError, PLUGIN_NAME, "startCamera", [options.x, options.y, options.width, options.height, options.camera, options.tapPhoto, options.previewDrag, options.toBack, options.alpha, options.tapFocus]);
 };
 
 CameraPreview.stopCamera = function(onSuccess, onError) {
@@ -88,16 +88,12 @@ CameraPreview.getZoom = function(onSuccess, onError) {
     exec(onSuccess, onError, PLUGIN_NAME, "getZoom", []);
 };
 
-CameraPreview.getHorizontalFOV = function(onSuccess, onError) {
-    exec(onSuccess, onError, PLUGIN_NAME, "getHorizontalFOV", []);
-};
-
 CameraPreview.setPreviewSize = function(dimensions, onSuccess, onError) {
     dimensions = dimensions || {};
     dimensions.width = dimensions.width || window.screen.width;
     dimensions.height = dimensions.height || window.screen.height;
 
-    exec(onSuccess, onError, PLUGIN_NAME, "setPreviewSize", [dimensions.width, dimensions.height]);
+    return exec(onSuccess, onError, PLUGIN_NAME, "setPreviewSize", [dimensions.width, dimensions.height]);
 };
 
 CameraPreview.getSupportedPictureSizes = function(onSuccess, onError) {
@@ -106,10 +102,6 @@ CameraPreview.getSupportedPictureSizes = function(onSuccess, onError) {
 
 CameraPreview.getSupportedFlashModes = function(onSuccess, onError) {
     exec(onSuccess, onError, PLUGIN_NAME, "getSupportedFlashModes", []);
-};
-
-CameraPreview.getSupportedColorEffects = function(onSuccess, onError) {
-    exec(onSuccess, onError, PLUGIN_NAME, "getSupportedColorEffects", []);
 };
 
 CameraPreview.setFlashMode = function(flashMode, onSuccess, onError) {
@@ -171,10 +163,6 @@ CameraPreview.getWhiteBalanceMode = function(onSuccess, onError) {
 
 CameraPreview.setWhiteBalanceMode = function(whiteBalanceMode, onSuccess, onError) {
     exec(onSuccess, onError, PLUGIN_NAME, "setWhiteBalanceMode", [whiteBalanceMode]);
-};
-
-CameraPreview.onBackButton = function(onSuccess, onError) {
-  exec(onSuccess, onError, PLUGIN_NAME, "onBackButton");
 };
 
 CameraPreview.FOCUS_MODE = {

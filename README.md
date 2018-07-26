@@ -1,12 +1,11 @@
-# Cordova Plugin Camera Preview
-<a href="https://badge.fury.io/js/cordova-plugin-camera-preview" target="_blank"><img height="21" style='border:0px;height:21px;' border='0' src="https://badge.fury.io/js/cordova-plugin-camera-preview.svg" alt="NPM Version"></a>
-<a href='https://www.npmjs.org/package/cordova-plugin-camera-preview' target='_blank'><img height='21' style='border:0px;height:21px;' src='https://img.shields.io/npm/dt/cordova-plugin-camera-preview.svg?label=NPM+Downloads' border='0' alt='NPM Downloads' /></a>
+Cordova Plugin Camera Preview
+====================
 
 Cordova plugin that allows camera interaction from Javascript and HTML
 
-**Releases are being kept up to date when appropriate. However, this plugin is under constant development. As such it is recommended to use master to always have the latest fixes & features.**
+**This plugin is under constant development. It is recommended to use master to always have the latest fixes and features.**
 
-**PR's are greatly appreciated. Maintainer(s) wanted.**
+**PR's are greatly appreciated**
 
 # Features
 
@@ -32,7 +31,7 @@ To install the master version with latest fixes and features
 ```
 cordova plugin add https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git
 
-ionic cordova plugin add https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git
+ionic plugin add https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git
 
 meteor add cordova:cordova-plugin-camera-preview@https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git#[latest_commit_id]
 
@@ -44,7 +43,7 @@ or if you want to use the last released version on npm
 ```
 cordova plugin add cordova-plugin-camera-preview
 
-ionic cordova plugin add cordova-plugin-camera-preview
+ionic plugin add cordova-plugin-camera-preview
 
 meteor add cordova:cordova-plugin-camera-preview@X.X.X
 
@@ -55,7 +54,7 @@ meteor add cordova:cordova-plugin-camera-preview@X.X.X
 If you are developing for iOS 10+ you must also add the following to your config.xml
 
 ```xml
-<config-file platform="ios" target="*-Info.plist" parent="NSCameraUsageDescription" overwrite="true">
+<config-file platform="ios" target="*-Info.plist" parent="NSCameraUsageDescription">
   <string>Allow the app to use your camera</string>
 </config-file>
 
@@ -65,14 +64,6 @@ If you are developing for iOS 10+ you must also add the following to your config
   <string>Allow the app to use your camera</string>
 </gap:config-file>
 ```
-
-### Android Quirks (older devices)
-When using the plugin for older devices, the camera preview will take the focus inside the app once initialized.
-In order to prevent the app from closing when a user presses the back button, the event for the camera view is disabled.
-If you still want the user to navigate, you can add a listener for the back event for the preview
-(see <code>[onBackButton](#onBackButton)</code>)
-
-
 
 # Methods
 
@@ -88,12 +79,11 @@ All options stated are optional and will default to values here
 * `y` - Defaults to 0
 * `width` - Defaults to window.screen.width
 * `height` - Defaults to window.screen.height
-* `camera` - See <code>[CAMERA_DIRECTION](#camera_Settings.CameraDirection)</code> - Defaults to front camera
+* `camera` - See <code>[CAMERA_DIRECTION](#camera_Settings.CameraDirection)</code> - Defaults to front camera/code>
 * `toBack` - Defaults to false - Set to true if you want your html in front of your preview
 * `tapPhoto` - Defaults to true - Does not work if toBack is set to false in which case you use the takePicture method
 * `tapFocus` - Defaults to false - Allows the user to tap to focus, when the view is in the foreground
 * `previewDrag` - Defaults to false - Does not work if toBack is set to false
-* `disableExifHeaderStripping` - Defaults to false - On Android disable automatic rotation of the image, and let the browser deal with it (keep reading on how to achieve it)
 
 ```javascript
 let options = {
@@ -120,78 +110,6 @@ html, body, .ion-app, .ion-content {
 ```
 
 When both tapFocus and tapPhoto are true, the camera will focus, and take a picture as soon as the camera is done focusing.
-
-#### Using disableExifHeaderStripping
-
-If you want to capture large images you will notice in Android that performace is very bad, in those cases you can set
-this flag, and add some extra Javascript/HTML to get a proper display of your captured images without risking your application speed.
-
-Example:
-
-```html
-<script src="https://raw.githubusercontent.com/blueimp/JavaScript-Load-Image/master/js/load-image.all.min.js"></script>
-
-<p><div id="originalPicture" style="width: 100%"></div></p>
-```
-
-```javascript
-let options = {
-  x: 0,
-  y: 0,
-  width: window.screen.width,
-  height: window.screen.height,
-  camera: CameraPreview.CAMERA_DIRECTION.BACK,
-  toBack: false,
-  tapPhoto: true,
-  tapFocus: false,
-  previewDrag: false,
-  disableExifHeaderStripping: true
-};
-....
-
-function gotRotatedCanvas(canvasimg) {
-  var displayCanvas = $('canvas#display-canvas');
-  loadImage.scale(canvasimg, function(img){
-    displayCanvas.drawImage(img)
-  }, {
-    maxWidth: displayCanvas.width,
-    maxHeight: displayCanvas.height
-  });
-}
-
-CameraPreview.getSupportedPictureSizes(function(dimensions){
-  dimensions.sort(function(a, b){
-    return (b.width * b.height - a.width * a.height);
-  });
-  var dimension = dimensions[0];
-  CameraPreview.takePicture({width:dimension.width, height:dimension.height, quality: 85}, function(base64PictureData){
-    /*
-      base64PictureData is base64 encoded jpeg image. Use this data to store to a file or upload.
-      Its up to the you to figure out the best way to save it to disk or whatever for your application.
-    */
-
-    var image = 'data:image/jpeg;base64,' + imgData;
-    let holder = document.getElementById('originalPicture');
-    let width = holder.offsetWidth;
-    loadImage(
-      image,
-      function(canvas) {
-        holder.innerHTML = "";
-        if (app.camera === 'front') {
-          // front camera requires we flip horizontally
-          canvas.style.transform = 'scale(1, -1)';
-        }
-        holder.appendChild(canvas);
-      },
-      {
-        maxWidth: width,
-        orientation: true,
-        canvas: true
-      }
-    );
-  });
-});
-```
 
 ### stopCamera([successCallback, errorCallback])
 
@@ -307,32 +225,6 @@ CameraPreview.getFlashMode(function(currentFlashMode){
   console.log(currentFlashMode);
 });
 ```
-
-### getHorizontalFOV(cb, [errorCallback])
-
-<info>Get the Horizontal FOV for the camera device currently started. Returns a string of a float that is the FOV of the camera in Degrees. </info><br/>
-
-```javascript
-CameraPreview.getHorizontalFOV(function(getHorizontalFOV){
-  console.log(getHorizontalFOV);
-});
-```
-
-### getSupportedColorEffects(cb, [errorCallback])
-
-*Currently this feature is for Android only. A PR for iOS support would be happily accepted*
-
-<info>Get color modes supported by the camera device currently started. Returns an array containing supported color effects (strings). See <code>[COLOR_EFFECT](#camera_Settings.ColorEffect)</code> for possible values that can be returned.</info><br/>
-
-```javascript
-CameraPreview.getSupportedColorEffects(function(colorEffects){
-  colorEffects.forEach(function(color) {
-    console.log(color + ', ');
-  });
-});
-```
-
-
 ### setColorEffect(colorEffect, [successCallback, errorCallback])
 
 <info>Set the color effect. See <code>[COLOR_EFFECT](#camera_Settings.ColorEffect)</code> for details about the possible values for colorEffect.</info><br/>
@@ -477,16 +369,6 @@ CameraPreview.getSupportedPictureSizes(function(dimensions){
 let xPoint = event.x;
 let yPoint = event.y
 CameraPreview.tapToFocus(xPoint, yPoint);
-```
-
-### onBackButton(successCallback, [errorCallback])
-
-<info>Callback event for the back button tap</info><br/>
-
-```javascript
-CameraPreview.onBackButton(function() {
-  console.log('Back button pushed');
-});
 ```
 
 # Settings

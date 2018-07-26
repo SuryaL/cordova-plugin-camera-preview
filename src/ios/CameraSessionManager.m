@@ -401,12 +401,6 @@
     return videoDevice.videoZoomFactor;
 }
 
-- (float)getHorizontalFOV {
-
-  AVCaptureDevice * videoDevice = [self cameraWithPosition: self.defaultCamera];
-  return videoDevice.activeFormat.videoFieldOfView;
-}
-
 - (CGFloat)getMaxZoom {
     
     AVCaptureDevice * videoDevice = [self cameraWithPosition: self.defaultCamera];
